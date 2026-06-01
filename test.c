@@ -5,6 +5,7 @@
 #include <time.h>
 
 #define world_size 256
+#define bioms_count_rivers 4
 #define bioms_count 3
 
 int world[world_size][world_size] = { 0 };
@@ -116,9 +117,9 @@ void addBiomClusterBlock(int rx, int ry, int biom)
     }
 }
 
-void generateBiomClusters()
+void generateBiomClusters(int bioms_to_generate)
 {
-    for (int biom = 2; biom < bioms_count + 2; biom++) {
+    for (int biom = 3; biom < bioms_to_generate + 3; biom++) {
         int rx = random_int(0, world_size - 1);
         int ry = random_int(0, world_size - 1);
         while (world[rx][ry] != 1) {
@@ -292,29 +293,66 @@ void smoofRivers()
     }
 }
 
+void generateBeach(int beachDepth)
+{
+    for (int x = 0; x < world_size; x++) {
+        for (int y = 0; y < world_size; y++) {
+            if (world[x][y] == 3 || world[x][y] == 4) {
+                if (world[x - 1][y] == 0 || world[x + 1][y] == 0 || world[x][y - 1] == 0 || world[x][y + 1] == 0)
+                    world[x][y] = 2;
+            }
+        }
+    }
+    for (int i = 0; i < beachDepth; i++) {
+        int step_world[world_size][world_size];
+        for (int x = 0; x < world_size; x++) {
+            for (int y = 0; y < world_size; y++) {
+                step_world[x][y] = world[x][y];
+            }
+        }
+        for (int x = 0; x < world_size; x++) {
+            for (int y = 0; y < world_size; y++) {
+                if (world[x][y] == 2) {
+                    if (world[x - 1][y] != 0)
+                        step_world[x - 1][y] = 2;
+                    if (world[x + 1][y] != 0)
+                        step_world[x + 1][y] = 2;
+                    if (world[x][y - 1] != 0)
+                        step_world[x][y - 1] = 2;
+                    if (world[x][y + 1] != 0)
+                        step_world[x][y + 1] = 2;
+                }
+            }
+        }
+        for (int x = 0; x < world_size; x++) {
+            for (int y = 0; y < world_size; y++) {
+                world[x][y] = step_world[x][y];
+            }
+        }
+    }
+}
+
 int main()
 {
     srand(time(NULL));
     initNoise();
     for (int i = 0; i < 20; i++)
         smoofIteration();
-    generateBiomClusters();
+    generateBiomClusters(bioms_count_rivers);
     for (int i = 0; i < world_size; i++) {
         growBioms();
     }
     generateRivers();
     extendRivers();
     deleteBioms();
-
-    generateBiomClusters();
+    generateBiomClusters(bioms_count);
     for (int i = 0; i < world_size; i++) {
         growBioms();
     }
     smoofRivers();
-
-    printRivers();
     deleteIslands();
-
+    generateBeach(1);
+    printRivers();
     saveWorld();
     return 0;
 }
